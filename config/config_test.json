@@ -1,0 +1,38 @@
+{
+    "test_config": {
+        "output_directory": "",
+        "data_type":"raw2jpgD_p",
+        "net_type":"u_net",
+        "net_type_ap":"unet_att_style",
+        "seed": 1234,
+        "checkpoint_path1": "",
+        "checkpoint_path2": "",
+        "checkpoint_path3": "",
+        "variance_map":true,
+        "simulate_params":true
+    },
+    "data_config": {
+        "seed": 1234,
+        "file_list":"camera_params.csv",
+        "crop_size": 512,
+        "aperture":true,
+        "patch":false,
+        "n_params": 2,
+        "threshold": 0.5,
+        "unet_training": false,
+        "inference": true,
+        "maskthr": 0.99,
+        "camera":"Nikon"
+    },
+    "network_config": {
+        "n_input_channels": 8,
+        "n_output_channels": 4,
+        "u_net_part":false
+    },
+    "network_config2": {
+        "n_params": 2,
+        "n_input_channels": 4,
+        "n_output_channels": 4,
+        "attention": true
+    }
+}

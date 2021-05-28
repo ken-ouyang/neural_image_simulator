@@ -1,0 +1,58 @@
+{
+    "train_config": {
+        "output_directory": "exp/deblur_new_unet_all_ms1_rl1_vmnew_unet_att_style_l2_ap2_all_thr0.5_rl2_scatt_newmask99_l1_544000_apmodel_2thresh",
+        "epochs": 10000,
+        "learning_rate1": 1e-3,
+        "learning_rate2": 1e-3,
+        "learning_rate3": 1e-3,
+        "aperture": true,
+        "iters_per_checkpoint": 2000,
+        "batch_size":1,
+	    "epoch_size":10000,
+        "loss_type1":"l1",
+        "loss_type2":"l1",
+        "loss_type3":"l1",
+        "loss2_weight":1,
+        "loss2_step":30,
+        "ep":0.2,
+        "data_type":"raw2jpgD_p",
+        "net_type":"u_net",
+        "net_type_ap":"unet_att_style",
+        "residual_learning1":true,
+        "residual_learning2":true,
+        "seed": 1234,
+        "checkpoint_path1": "",
+        "checkpoint_path2": "",
+        "checkpoint_path3": "",
+	    "parallel":false,
+        "multi_stage":30,
+        "multi_stage2":60,
+        "variance_map":true,
+        "isp_save": true,
+        "isp_save_step": 0
+    },
+    "data_config": {
+        "seed": 1234,
+        "file_list":"camera_params.csv",
+        "crop_size": 512,
+        "aperture":true,
+        "patch":false,
+        "n_params": 2,
+        "threshold": 1.0,
+        "unet_training": false,
+        "inference": false,
+        "maskthr": 0.99,
+        "camera":"Nikon"
+    },
+    "network_config": {
+        "n_input_channels": 8,
+        "n_output_channels": 4,
+        "u_net_part": false
+    },
+    "network_config2": {
+        "n_params": 2,
+        "n_input_channels": 4,
+        "n_output_channels": 4,
+        "attention": true
+    }
+}
