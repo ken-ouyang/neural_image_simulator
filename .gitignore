@@ -1,0 +1,4 @@
+ProcessedData/
+exp/
+__pycache__/
+pyexiftool/__pycache__/

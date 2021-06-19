@@ -123,17 +123,13 @@ def adjust_hsv(hsv, hsv_map, hsv_dims):
     clip(hsv, 1)
     return hsv
 
-def isp(raw, path, datapath, patch, alpha):
+def isp(raw, path, datapath, alpha):
     baseline_exposure_shift = 0.8 
     saturation_scale = 1
     lamda = 0.4
     matrix_used = 2
 
-    if patch:
-        name_length = -len(path.split("/")[-1])
-        path_name = path[:name_length]+path.split("/")[-1][:8]
-    else:
-        path_name = path
+    path_name = path
     csv.field_size_limit(sys.maxsize)
     params=[]
     data_path = datapath[:-17]+'camera_isp_params.csv'

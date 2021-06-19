@@ -1,0 +1,28 @@
+{
+    "test_config": {
+        "output_directory": "exp/test",
+        "seed": 1234,
+        "checkpoint_path1": "./exp/demo/exp_model",
+        "checkpoint_path2": "./exp/demo/unet_model",
+        "checkpoint_path3": "./exp/demo/ap_model"
+    },
+    "data_config": {
+        "seed": 1234,
+        "file_list":"./ProcessedData/Nikon/AutoModenikon_test_512/camera_params.csv",
+        "aperture":true,
+        "n_params": 2,
+        "threshold": 0.5,
+        "unet_training": false,
+        "maskthr": 0.99,
+        "camera":"Nikon"
+    },
+    "network_config": {
+        "n_input_channels": 8,
+        "n_output_channels": 4
+    },
+    "network_config2": {
+        "n_params": 2,
+        "n_input_channels": 4,
+        "n_output_channels": 4
+    }
+}

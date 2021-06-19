@@ -5,20 +5,16 @@ import torch
 import torch.nn as nn
 import numpy as np
 from PIL import Image
-
 from torch.utils.data import DataLoader
 import torch.distributions as tdist
 from torch.optim.lr_scheduler import MultiStepLR
-from unet_model import UNet
-
+from unet_model_ori import UNet
 from unet_attention_decouple import AttenUnet_style
 from data_utils import autoTrainSetRaw2jpgProcessed 
-from shutil import copyfile
 from exposure_module import ExposureNet
-
 from isp import isp
 
-os.environ["CUDA_VISIBLE_DEVICES"]="8"
+os.environ["CUDA_VISIBLE_DEVICES"]="7"
 
 def load_checkpoint(checkpoint_path, model, optimizer):
     assert os.path.isfile(checkpoint_path)
@@ -49,41 +45,23 @@ def save_checkpoint(model, net_type, optimizer, learning_rate, iteration, filepa
                 'learning_rate': learning_rate}, filepath)
 
 
-def save_training_images(img_list, image_path):
-    print("Saving output images")
-    b,c,h,w = img_list[0].shape
-    batch_list = []
-    for img in img_list:
-        clip(img)
-        tmp_batch = img[0,:,:,:]
-        for i in range(b-1): 
-            tmp_batch = np.concatenate((tmp_batch, img[i+1,:,:,:]), axis=1)
-        batch_list.append(tmp_batch)
-    new_img_array = np.concatenate(batch_list, axis=2) * 255
-    new_img = Image.fromarray(np.transpose(new_img_array, [1,2,0]).astype('uint8'), 'RGB')
-    new_img.save(image_path, quality=100)
-
 def save_training_images_raw(img_list, image_path, img_name, alpha):
     print("Saving output images")
     b,c,h,w = img_list[0].shape
     batch_list = []
     for img in img_list:
         clip(img)
-        tmp_batch = isp(img[0,:,:,:], img_name[0], data_config["file_list"], data_config["patch"], alpha[0])
+        tmp_batch = isp(img[0,:,:,:], img_name[0], data_config["file_list"], alpha[0])
         for i in range(b-1): 
-            tmp_batch = np.concatenate((tmp_batch, isp(img[i+1,:,:,:], img_name[i+1], data_config["file_list"], data_config["patch"], alpha[i+1])), axis=1)
+            tmp_batch = np.concatenate((tmp_batch, isp(img[i+1,:,:,:], img_name[i+1], data_config["file_list"], alpha[i+1])), axis=1)
         batch_list.append(tmp_batch)
     new_img_array = np.concatenate(batch_list, axis=2) * 255
     new_img = Image.fromarray(np.transpose(new_img_array, [1,2,0]).astype('uint8'), 'RGB')
-    new_img.save(image_path, quality=100)
+    new_img.save(image_path, quality=95)
 
 def clip(img):
     img[img>1] = 1
     img[img<0] = 0
-
-def vis_raw_one_c(raw,channel=1):
-    raw_g = np.power(np.expand_dims(raw[:,channel,:,:], axis=1), 1/2.2)
-    return np.tile(raw_g, (1,3,1,1))
 
 def get_variance_map(input_raw, shot_noise, read_noise, mul=None):
     if not type(mul) == type(None):
@@ -104,9 +82,9 @@ def get_variance_map(input_raw, shot_noise, read_noise, mul=None):
     return var_map
 
 def train(output_directory, epochs, learning_rate1, learning_rate2, learning_rate3, aperture,
-          iters_per_checkpoint, batch_size, epoch_size, loss_type1, loss_type2, loss_type3, loss2_weight, loss2_step, ep,
-           data_type, net_type, net_type_ap, seed, checkpoint_path1, checkpoint_path2, checkpoint_path3, residual_learning1,
-           residual_learning2, parallel, variance_map, isp_save, isp_save_step, multi_stage=None, multi_stage2=None):
+          iters_per_checkpoint, batch_size, epoch_size, loss_type1, loss_type2, loss_type3,
+           net_type, net_type_ap, seed, checkpoint_path1, checkpoint_path2, checkpoint_path3, residual_learning1,
+           residual_learning2, parallel, variance_map, isp_save, multi_stage=None, multi_stage2=None):
     # set manual seed
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
@@ -136,9 +114,10 @@ def train(output_directory, epochs, learning_rate1, learning_rate2, learning_rat
             model_aperture = nn.DataParallel(model_aperture)
     optimizer_1 = torch.optim.Adam(model_exposure.parameters(), lr=learning_rate1)
     optimizer_2 = torch.optim.Adam(model_noise.parameters(), lr=learning_rate2)
+    scheduler_2 = MultiStepLR(optimizer_2, milestones=[20, 40], gamma=0.1)
     if aperture:
         optimizer_3 = torch.optim.Adam(model_aperture.parameters(), lr=learning_rate3)
-        scheduler_3 = MultiStepLR(optimizer_3, milestones=[15, 40], gamma=0.1)
+        scheduler_3 = MultiStepLR(optimizer_3, milestones=[20, 40], gamma=0.1)
 
     # Load checkpoint if one exists
     iteration = 0
@@ -154,11 +133,7 @@ def train(output_directory, epochs, learning_rate1, learning_rate2, learning_rat
         iteration += 1
 
     # build dataset
-    if data_type == "raw2jpgD_p":
-        trainset = autoTrainSetRaw2jpgProcessed(**data_config)
-    else:
-        print("not implemented error")
-        return 0
+    trainset = autoTrainSetRaw2jpgProcessed(**data_config)
     epoch_size = min(len(trainset), epoch_size)
     train_sampler = torch.utils.data.RandomSampler(trainset, True, epoch_size) 
     train_loader = DataLoader(trainset, num_workers=5, shuffle=False,
@@ -170,8 +145,6 @@ def train(output_directory, epochs, learning_rate1, learning_rate2, learning_rat
     # Get shared output_directory ready
     if not os.path.isdir(output_directory):
         os.makedirs(output_directory)
-        # copy a config file to the output directory for checking
-        # copyfile(config_path, output_directory+"/"+config_path)
         os.chmod(output_directory, 0o775)
     
     print("output directory", output_directory)
@@ -191,21 +164,19 @@ def train(output_directory, epochs, learning_rate1, learning_rate2, learning_rat
             if aperture:
                 model_aperture.zero_grad()
 
-            if data_type == "raw2jpgD_p":
-                exp_params, ap_params, noise_params, input_raw, input_jpg, output_raw, mask, \
-                    input_shot_noise, input_read_noise, output_shot_noise, output_read_noise, \
-                    img_name = batch
-                if aperture:
-                    ap_params = torch.autograd.Variable(ap_params.cuda())
-                exp_params = torch.autograd.Variable(exp_params.cuda())
-                noise_params = torch.autograd.Variable(noise_params.cuda())
-                input_shot_noise = torch.autograd.Variable(input_shot_noise.cuda())
-                input_read_noise = torch.autograd.Variable(input_read_noise.cuda())
-                output_shot_noise = torch.autograd.Variable(output_shot_noise.cuda())
-                output_read_noise = torch.autograd.Variable(output_read_noise.cuda())
-                mask = mask.cuda()
-            else:
-                print("data_type is not correct.")
+            exp_params, ap_params, noise_params, input_raw, input_jpg, output_raw, mask, \
+                input_shot_noise, input_read_noise, output_shot_noise, output_read_noise, \
+                img_name = batch
+            if aperture:
+                ap_params = torch.autograd.Variable(ap_params.cuda())
+            exp_params = torch.autograd.Variable(exp_params.cuda())
+            noise_params = torch.autograd.Variable(noise_params.cuda())
+            input_shot_noise = torch.autograd.Variable(input_shot_noise.cuda())
+            input_read_noise = torch.autograd.Variable(input_read_noise.cuda())
+            output_shot_noise = torch.autograd.Variable(output_shot_noise.cuda())
+            output_read_noise = torch.autograd.Variable(output_read_noise.cuda())
+            mask = mask.cuda()
+
             
             input_raw  = torch.autograd.Variable(input_raw.cuda())
             output_raw  = torch.autograd.Variable(output_raw.cuda())
@@ -241,27 +212,13 @@ def train(output_directory, epochs, learning_rate1, learning_rate2, learning_rat
             # define noise loss
             if loss_type2 == "l1":
                loss_f2 = torch.nn.L1Loss()
-            elif loss_type2 == "l2" or loss_type2 == "l2log":
+            elif loss_type2 == "l2":
                loss_f2 = torch.nn.MSELoss()
-            if loss_type2 == "l2log":
-                b, c, h, w = output_ns.size()
-                epsilon = torch.ones(b, dtype=torch.float32).cuda() * ep
-                if residual_learning1:
-                    if epoch > loss2_step:
-                        loss2 = loss2_weight * loss_f2(torch.log(torch.max(torch.max((output_ns+output_exp)*mask,1)[0], epsilon)), torch.log(torch.max(torch.max(output_raw*mask,1)[0], epsilon))) + loss_f2(output_ns*mask, (output_raw-output_exp)*mask)
-                    else:
-                        loss2 = loss_f2(output_ns*mask, (output_raw-output_exp)*mask)
-                else:
-                    if epoch > loss2_step:
-                        loss2 = loss_f2(output_ns*mask, output_raw*mask) + loss2_weight * loss_f2(torch.log(torch.max(torch.max(output_ns*mask,1)[0], epsilon)), torch.log(torch.max(torch.max(output_raw*mask,1)[0], epsilon)))
-                    else:
-                        loss2 = loss_f2(output_ns*mask, output_raw*mask)
 
+            if residual_learning1:
+                loss2 = loss_f2(output_ns*mask, (output_raw-output_exp)*mask)
             else:
-                if residual_learning1:
-                    loss2 = loss_f2(output_ns*mask, (output_raw-output_exp)*mask)
-                else:
-                    loss2 = loss_f2(output_ns*mask, output_raw*mask)
+                loss2 = loss_f2(output_ns*mask, output_raw*mask)
 
             
             if aperture:
@@ -325,65 +282,34 @@ def train(output_directory, epochs, learning_rate1, learning_rate2, learning_rat
                 save_checkpoint(model_aperture, net_type_ap, optimizer_3, learning_rate3, iteration,
                                checkpoint_path3, parallel)
                 # save testing images
-                if data_type == "raw2jpgD_p":
-                    if residual_learning1:
-                        if isp_save and epoch > isp_save_step:
-                            if aperture:
-                                if residual_learning2:
-                                    save_training_images_raw([input_raw.cpu().data.numpy(),
+                if residual_learning1:
+                    if isp_save:
+                        if aperture:
+                            if residual_learning2:
+                                save_training_images_raw([input_raw.cpu().data.numpy(),
                                                 output_exp.cpu().data.numpy(),
                                                 (output_ns+output_exp).cpu().data.numpy(),
                                                 (output_ap+output_ns+output_exp).cpu().data.numpy(),
                                                 output_raw.cpu().data.numpy()], image_path, img_name, exp_params_m.cpu().data.numpy())
-                                else:
-                                    save_training_images_raw([input_raw.cpu().data.numpy(),
+                            else:
+                                save_training_images_raw([input_raw.cpu().data.numpy(),
                                                 output_exp.cpu().data.numpy(),
                                                 (output_ns+output_exp).cpu().data.numpy(),
                                                 output_ap.cpu().data.numpy(),
                                                 output_raw.cpu().data.numpy()], image_path, img_name, exp_params_m.cpu().data.numpy())
-                            else:
-                                save_training_images_raw([input_raw.cpu().data.numpy(),
+                        else:
+                            save_training_images_raw([input_raw.cpu().data.numpy(),
                                                 output_exp.cpu().data.numpy(),
                                                 (output_ns+output_exp).cpu().data.numpy(), 
                                                 output_raw.cpu().data.numpy()], image_path, img_name, exp_params_m.cpu().data.numpy())
-                    else:
-                        if isp_save:
-                            if aperture:
-                                if residual_learning2:
-                                    save_training_images_raw([input_raw.cpu().data.numpy(),
-                                                output_exp.cpu().data.numpy(),
-                                                output_ns.cpu().data.numpy(), 
-                                                (output_ns+output_ap).cpu().data.numpy(), 
-                                                output_raw.cpu().data.numpy()], image_path, img_name, exp_params_m.cpu().data.numpy())
-                                else:
-                                    save_training_images_raw([input_raw.cpu().data.numpy(),
-                                                output_exp.cpu().data.numpy(),
-                                                output_ns.cpu().data.numpy(), 
-                                                output_ap.cpu().data.numpy(), 
-                                                output_raw.cpu().data.numpy()], image_path, img_name, exp_params_m.cpu().data.numpy())
-                            else:
-                                save_training_images_raw([input_raw.cpu().data.numpy(),
-                                                output_exp.cpu().data.numpy(),
-                                                output_ns.cpu().data.numpy(), 
-                                                output_raw.cpu().data.numpy()], image_path, img_name, exp_params_m.cpu().data.numpy())
-                        else:
-                            if aperture:
-                                save_training_images([input_jpg.cpu().data.numpy(), 
-                                                vis_raw_one_c(input_raw.cpu().data.numpy()),
-                                                vis_raw_one_c(output_exp.cpu().data.numpy()),
-                                                vis_raw_one_c(output_ns.cpu().data.numpy()), 
-                                                vis_raw_one_c(output_ap.cpu().data.numpy()), 
-                                                vis_raw_one_c(output_raw.cpu().data.numpy())], image_path, exp_params_m.cpu().data.numpy())
-                            else:
-                                save_training_images([input_jpg.cpu().data.numpy(), 
-                                                vis_raw_one_c(input_raw.cpu().data.numpy()),
-                                                vis_raw_one_c(output_exp.cpu().data.numpy()),
-                                                vis_raw_one_c(output_ns.cpu().data.numpy()), 
-                                                vis_raw_one_c(output_raw.cpu().data.numpy())], image_path)
                 
-
             iteration += 1
-        scheduler_3.step()
+        if epoch > multi_stage2:
+            scheduler_3.step()
+        elif epoch > multi_stage:
+            scheduler_2.step()
+        
+        
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

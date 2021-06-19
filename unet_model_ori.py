@@ -1,9 +1,9 @@
 import torch.nn.functional as F
 
-from unet_parts import *
+from unet_parts_ori import *
 
 class UNet(nn.Module):
-    def __init__(self, n_input_channels, n_output_channels, u_net_part):
+    def __init__(self, n_input_channels, n_output_channels):
         super(UNet, self).__init__()
         self.inc = inconv(n_input_channels, 64)
         self.down1 = down(64, 128)
