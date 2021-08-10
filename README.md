@@ -8,7 +8,7 @@
 >  HKUST <br>
 
 [[Paper](https://arxiv.org/abs/2104.05237)] 
-[[Datasets(Coming soon)](https://aaaa.github.io/TBA)] 
+[[Datasets](https://hkustconnect-my.sharepoint.com/:f:/g/personal/zshiaj_connect_ust_hk/Eu7788io4UBBkQoEVGQr7hQBeKpowDnNunlPW5Xv1qGrdQ?e=cyVHtk)] 
 
 
 
@@ -25,13 +25,13 @@ conda env create -f environment.yml
 ```
 
 ## Preparing datasets
-We provide two datasets for training and test: [[Nikon](https://aaaa.github.io/TBA)] and [[Canon](https://aaaa.github.io/TBA)]. The data can be preprocessed with the command:
+We provide two datasets for training and test: [[Nikon](https://hkustconnect-my.sharepoint.com/:f:/g/personal/zshiaj_connect_ust_hk/EsKZAEit4FZItIO9oTt-IaYBVz5tDyHjC4NYbywUTSlU4Q?e=XJc8cE)] and [[Canon](https://hkustconnect-my.sharepoint.com/:f:/g/personal/zshiaj_connect_ust_hk/ErmBVoXbwRFPmciYmtQeQscByOB8TZrBIHpvFZOSLfeLig?e=c3yq1d)]. The data can be preprocessed with the command:
 ```bash
 python preprocess/preprocess_nikon.py --input_dir the_directory_of_the_dataset --output_dir the_directory_to_save_the_preprocessed_data --image_size 512
 OR
 python preprocess/preprocess_canon.py --input_dir the_directory_of_the_dataset --output_dir the_directory_to_save_the_preprocessed_data --image_size 512
 ```
-The preprocessed data can also be downloaded with the link [[Nikon](https://aaaa.github.io/TBA)] and [[Canon](https://aaaa.github.io/TBA)]. The preprocessed dataset can be put into the folder `./ProcessedData/Nikon/` or `/ProcessedData/Canon/`
+The preprocessed data can also be downloaded with the link [[Nikon](https://hkustconnect-my.sharepoint.com/:f:/g/personal/zshiaj_connect_ust_hk/Eo2dgGZxa35LuPsgUge7aSgBQojaj1cxweNhY4B2g8WC-Q?e=I84tFK)] and [[Canon](https://hkustconnect-my.sharepoint.com/:f:/g/personal/zshiaj_connect_ust_hk/ElZXGJfixIlIqHhIpY2AO_wBp5o2I7qKfUvq_YojArBCtQ?e=byzKm1)]. The preprocessed dataset can be put into the folder `./ProcessedData/Nikon/` or `./ProcessedData/Canon/`
 
 ## Training networks
 The training arguments are specified in a json file. To train the model, run with the following code
@@ -39,10 +39,10 @@ The training arguments are specified in a json file. To train the model, run wit
 python train.py --config config/config_train.json
 ```
 The checkpoints will be saved into `./exp/{exp_name}/`. 
-When training the noise module, set `unet_training` in the json file to be `true`. Other times it will be false. `aperture` is `true` when training the aperture module while other times it is `false`.
+When training the noise module, set `unet_training` in the json file to be `true`. Other times it will be `false`. `aperture` is `true` when training the aperture module while other times it is `false`.
 
 ## Demo
-Download the pretrained demo [[checkpoints](https://aaaa.github.io/TBA)] and put them under `./exp/demo/`. Then, run the command
+Download the pretrained demo [[checkpoints](https://hkustconnect-my.sharepoint.com/:f:/g/personal/zshiaj_connect_ust_hk/EkTcqA8Ewj5PhCta-gH0FlYBt9iAzylEG-jS533a2Nbz-A?e=WvcTc2)] and put them under `./exp/demo/`. Then, run the command
 ```bash
 python demo_simulation.py --config config/config_demo.json
 ```

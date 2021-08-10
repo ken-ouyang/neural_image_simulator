@@ -17,7 +17,6 @@ import json
 
 
 def files_to_pairs_p(filename, threshold, unet_training, camera):
-    # from csv to list
     separating_points=[0]
     # Dictionary for aperture 
     aperture_dict = {'22.0':1, '20.0':1.33333, '18.0':1.666667, '16.0':2, '14.0':2.66667, '13.0':3.33333, '11.0':4, '10.0':5.33333, \
