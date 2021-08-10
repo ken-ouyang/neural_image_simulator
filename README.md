@@ -8,7 +8,7 @@
 >  HKUST <br>
 
 [[Paper](https://arxiv.org/abs/2104.05237)] 
-[[Datasets](https://hkustconnect-my.sharepoint.com/:f:/g/personal/zshiaj_connect_ust_hk/Eu7788io4UBBkQoEVGQr7hQBeKpowDnNunlPW5Xv1qGrdQ?e=cyVHtk)] 
+[[Datasets](https://hkustconnect-my.sharepoint.com/:f:/g/personal/zshiaj_connect_ust_hk/Eu7788io4UBBkQoEVGQr7hQBeKpowDnNunlPW5Xv1qGrdQ?e=vdmKN2)] 
 
 
 
@@ -42,7 +42,7 @@ The checkpoints will be saved into `./exp/{exp_name}/`.
 When training the noise module, set `unet_training` in the json file to be `true`. Other times it will be `false`. `aperture` is `true` when training the aperture module while other times it is `false`.
 
 ## Demo
-Download the pretrained demo [[checkpoints](https://hkustconnect-my.sharepoint.com/:f:/g/personal/zshiaj_connect_ust_hk/EkTcqA8Ewj5PhCta-gH0FlYBt9iAzylEG-jS533a2Nbz-A?e=WvcTc2)] and put them under `./exp/demo/`. Then, run the command
+Download the pretrained demo [[checkpoints](https://hkustconnect-my.sharepoint.com/:f:/g/personal/zshiaj_connect_ust_hk/EkTcqA8Ewj5PhCta-gH0FlYBt9iAzylEG-jS533a2Nbz-A?e=y24WRz)] and put them under `./exp/demo/`. Then, run the command
 ```bash
 python demo_simulation.py --config config/config_demo.json
 ```
